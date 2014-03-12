@@ -14,58 +14,130 @@
      limitations under the License.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:orientation="vertical"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp">
-    <LinearLayout android:orientation="horizontal"
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:layout_margin="10dp">
-        <TextView android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="@string/label_device_address"
-                  android:textSize="18sp"/>
-        <Space android:layout_width="5dp"
-               android:layout_height="wrap_content"/>
-        <TextView android:id="@+id/device_address"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="18sp"/>
-    </LinearLayout>
-    <LinearLayout android:orientation="horizontal"
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:layout_margin="10dp">
-        <TextView android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="@string/label_state"
-                  android:textSize="18sp"/>
-        <Space android:layout_width="5dp"
-               android:layout_height="wrap_content"/>
-        <TextView android:id="@+id/connection_state"
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:text="@string/disconnected"
-                  android:textSize="18sp"/>
-    </LinearLayout>
-    <LinearLayout android:orientation="horizontal"
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:layout_margin="10dp">
-        <TextView android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="@string/label_data"
-                  android:textSize="18sp"/>
-        <Space android:layout_width="5dp"
-               android:layout_height="wrap_content"/>
-        <TextView android:id="@+id/data_value"
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:text="@string/no_data"
-                  android:textSize="18sp"/>
-    </LinearLayout>
-    <ExpandableListView android:id="@+id/gatt_services_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+			  android:orientation="vertical"
+			  android:layout_width="match_parent"
+			  android:layout_height="wrap_content"
+			  android:layout_margin="10dp">
+	<LinearLayout android:orientation="horizontal"
+				  android:layout_width="match_parent"
+				  android:layout_height="wrap_content"
+				  android:layout_margin="10dp">
+		<TextView android:layout_width="wrap_content"
+				  android:layout_height="wrap_content"
+				  android:text="@string/label_device_address"
+				  android:textSize="18sp"/>
+		<Space android:layout_width="5dp"
+			   android:layout_height="wrap_content"/>
+		<TextView android:id="@+id/device_address"
+				  android:layout_width="match_parent"
+				  android:layout_height="wrap_content"
+				  android:textSize="18sp"/>
+	</LinearLayout>
+	<LinearLayout android:orientation="horizontal"
+				  android:layout_width="match_parent"
+				  android:layout_height="wrap_content"
+				  android:layout_margin="10dp">
+		<TextView android:layout_width="wrap_content"
+				  android:layout_height="wrap_content"
+				  android:text="@string/label_state"
+				  android:textSize="18sp"/>
+		<Space android:layout_width="5dp"
+			   android:layout_height="wrap_content"/>
+		<TextView android:id="@+id/connection_state"
+				  android:layout_width="match_parent"
+				  android:layout_height="wrap_content"
+				  android:text="@string/disconnected"
+				  android:textSize="18sp"/>
+	</LinearLayout>
+	<LinearLayout android:orientation="horizontal"
+				  android:layout_width="match_parent"
+				  android:layout_height="wrap_content"
+				  android:layout_margin="10dp">
+		<TextView android:layout_width="wrap_content"
+				  android:layout_height="wrap_content"
+				  android:text="@string/label_data"
+				  android:textSize="18sp"/>
+		<Space android:layout_width="5dp"
+			   android:layout_height="wrap_content"/>
+		<TextView android:id="@+id/data_value"
+				  android:layout_width="match_parent"
+				  android:layout_height="wrap_content"
+				  android:text="@string/no_data"
+				  android:textSize="18sp"/>
+	</LinearLayout>
+
+	<LinearLayout android:layout_width="match_parent"
+				  android:layout_height="wrap_content"
+				  android:layout_margin="10dp"
+				  android:layout_weight="100">
+		<RadioGroup
+				android:id="@+id/radio_group"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="horizontal">
+			<RadioButton
+					android:id="@+id/insert_card"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:layout_weight="50"
+					android:text="@string/insert_card"
+					android:textSize="18sp"/>
+			<RadioButton
+					android:id="@+id/remove_card"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:layout_weight="50"
+					android:text="@string/remove_card"
+					android:textSize="18sp"/>
+		</RadioGroup>
+	</LinearLayout>
+
+	<LinearLayout android:layout_width="match_parent"
+				  android:layout_height="wrap_content"
+				  android:orientation="vertical"
+				  android:layout_margin="10dp">
+		<RelativeLayout android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="20dp">
+			<TextView
+					android:id="@+id/slide_angle"
+					android:text="@string/angle_slider"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:textSize="15sp"/>
+			<TextView
+					android:id="@+id/current_value"
+					android:text="@string/current_value"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:layout_alignRight="@+id/slide_angle"
+					android:layout_alignParentRight="true"
+					android:textSize="15sp"/>
+		</RelativeLayout>
+
+		<SeekBar
+				android:id="@+id/changeAngle"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:max="255"
+				android:layout_marginTop="20dp"/>
+	</LinearLayout>
+
+	<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:layout_margin="10dp"
+			android:layout_weight="100">
+		<Button android:id="@+id/minus"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_weight="50"
+				android:text="@string/minus"/>
+		<Button android:id="@+id/plus"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_weight="50"
+				android:text="@string/plus"/>
+	</LinearLayout>
 </LinearLayout>

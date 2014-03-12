@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2013 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.android.rfduinoandroid.app;
 
 import android.app.Activity;
@@ -31,8 +15,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ExpandableListView;
-import android.widget.SimpleExpandableListAdapter;
+import android.widget.Button;
+import android.widget.RadioButton;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,266 +28,342 @@ import java.util.List;
  * and display GATT services and characteristics supported by the device.  The Activity
  * communicates with {@code RfduinoBleService}, which in turn interacts with the
  * Bluetooth LE API.
+ * http://developer.android.com/guide/topics/connectivity/bluetooth-le.html
  */
 public class RfduinoControlActivity extends Activity {
-    private final static String TAG = RfduinoControlActivity.class.getSimpleName();
+	private final static String TAG = RfduinoControlActivity.class.getSimpleName();
 
-    public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
-    public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
+	public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
+	public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
 
-    private TextView mConnectionState;
-    private TextView mDataField;
-    private String mDeviceName;
-    private String mDeviceAddress;
-    private ExpandableListView mGattServicesList;
-    private RfduinoBleService mRfduinoBleService;
-    private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
-            new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
-    private boolean mConnected = false;
-    private BluetoothGattCharacteristic mNotifyCharacteristic;
+	private TextView mConnectionState;
+	private TextView mDataField;
+	private TextView mCurrentValue;
+	private SeekBar mChangeAngle;
+	private String mDeviceName;
+	private String mDeviceAddress;
+	private RadioButton mInsertCard;
+	private RadioButton mRemoveCard;
+	private Button mMinus;
+	private Button mPlus;
+	private RfduinoBleService mRfduinoBleService;
+	private BluetoothGattCharacteristic characteristicTX;
+	private BluetoothGattCharacteristic characteristicRX;
+	private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
+			new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
+	private boolean mConnected = false;
+	/**
+	 * int array representing control mode and degree.
+	 * eg: Auto-mode, it will look like {1, 0} and {1, 1}, respectively means {auto-mode, card removed} and {auto-mode, card inserted}
+	 * Manual-mode, it will look like {2, 0} and {2, 180} or {2, x}, respectively means {manual-mode, 0 deg} and {manual-mode, 180 deg} or {manual-mode, x deg}
+	 */
+	private int servoData[] = {1, 0}; // Initial value is {auto-mode, card removed}
 
-    private final String LIST_NAME = "NAME";
-    private final String LIST_UUID = "UUID";
+	private final String LIST_NAME = "NAME";
+	private final String LIST_UUID = "UUID";
 
-    // Code to manage Service lifecycle.
-    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+	// Code to manage Service lifecycle.
+	private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder service) {
-            mRfduinoBleService = ((RfduinoBleService.LocalBinder) service).getService();
-            if (!mRfduinoBleService.initialize()) {
-                Log.e(TAG, "Unable to initialize Bluetooth");
-                finish();
-            }
-            // Automatically connects to the device upon successful start-up initialization.
-            mRfduinoBleService.connect(mDeviceAddress);
-        }
+		@Override
+		public void onServiceConnected(ComponentName componentName, IBinder service) {
+			mRfduinoBleService = ((RfduinoBleService.LocalBinder) service).getService();
+			if (!mRfduinoBleService.initialize()) {
+				Log.e(TAG, "Unable to initialize Bluetooth");
+				finish();
+			}
+			// Automatically connects to the device upon successful start-up initialization.
+			mRfduinoBleService.connect(mDeviceAddress);
+		}
 
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            mRfduinoBleService = null;
-        }
-    };
+		@Override
+		public void onServiceDisconnected(ComponentName componentName) {
+			mRfduinoBleService = null;
+		}
+	};
 
-    // Handles various events fired by the Service.
-    // ACTION_GATT_CONNECTED: connected to a GATT server.
-    // ACTION_GATT_DISCONNECTED: disconnected from a GATT server.
-    // ACTION_GATT_SERVICES_DISCOVERED: discovered GATT services.
-    // ACTION_DATA_AVAILABLE: received data from the device.  This can be a result of read
-    //                        or notification operations.
-    private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-            if (RfduinoBleService.ACTION_GATT_CONNECTED.equals(action)) {
-                mConnected = true;
-                updateConnectionState(R.string.connected);
-                invalidateOptionsMenu();
-            } else if (RfduinoBleService.ACTION_GATT_DISCONNECTED.equals(action)) {
-                mConnected = false;
-                updateConnectionState(R.string.disconnected);
-                invalidateOptionsMenu();
-                clearUI();
-            } else if (RfduinoBleService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
-                // Show all the supported services and characteristics on the user interface.
-                displayGattServices(mRfduinoBleService.getSupportedGattServices());
-            } else if (RfduinoBleService.ACTION_DATA_AVAILABLE.equals(action)) {
-                displayData(intent.getStringExtra(RfduinoBleService.EXTRA_DATA));
-            }
-        }
-    };
+	// Handles various events fired by the Service.
+	// ACTION_GATT_CONNECTED: connected to a GATT server.
+	// ACTION_GATT_DISCONNECTED: disconnected from a GATT server.
+	// ACTION_GATT_SERVICES_DISCOVERED: discovered GATT services.
+	// ACTION_DATA_AVAILABLE: received data from the device.  This can be a result of read
+	//                        or notification operations.
+	private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			final String action = intent.getAction();
+			if (RfduinoBleService.ACTION_GATT_CONNECTED.equals(action)) {
+				mConnected = true;
+				updateConnectionState(R.string.connected);
+				invalidateOptionsMenu();
+			} else if (RfduinoBleService.ACTION_GATT_DISCONNECTED.equals(action)) {
+				mConnected = false;
+				updateConnectionState(R.string.disconnected);
+				invalidateOptionsMenu();
+				clearUI();
+			} else if (RfduinoBleService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
+				// Show all the supported services and characteristics on the user interface.
+				displayGattServices(mRfduinoBleService.getSupportedGattServices());
+			} else if (RfduinoBleService.ACTION_DATA_AVAILABLE.equals(action)) {
+				displayData(intent.getStringExtra(RfduinoBleService.EXTRA_DATA));
+			}
+		}
+	};
 
-    // If a given GATT characteristic is selected, check for supported features.  This sample
-    // demonstrates 'Read' and 'Notify' features.  See
-    // http://d.android.com/reference/android/bluetooth/BluetoothGatt.html for the complete
-    // list of supported characteristic features.
-    private final ExpandableListView.OnChildClickListener servicesListClickListner =
-            new ExpandableListView.OnChildClickListener() {
-                @Override
-                public boolean onChildClick(ExpandableListView parent, View v, int groupPosition,
-                                            int childPosition, long id) {
-                    if (mGattCharacteristics != null) {
-                        final BluetoothGattCharacteristic characteristic =
-                                mGattCharacteristics.get(groupPosition).get(childPosition);
-                        final int charaProp = characteristic.getProperties();
-                        if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
-                            // If there is an active notification on a characteristic, clear
-                            // it first so it doesn't update the data field on the user interface.
-                            if (mNotifyCharacteristic != null) {
-                                mRfduinoBleService.setCharacteristicNotification(
-                                        mNotifyCharacteristic, false);
-                                mNotifyCharacteristic = null;
-                            }
-                            mRfduinoBleService.readCharacteristic(characteristic);
-                        }
-                        if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-                            mNotifyCharacteristic = characteristic;
-                            mRfduinoBleService.setCharacteristicNotification(
-                                    characteristic, true);
-                        }
-                        return true;
-                    }
-                    return false;
-                }
-    };
+	private void clearUI() {
+		mDataField.setText(R.string.no_data);
+	}
 
-    private void clearUI() {
-        mGattServicesList.setAdapter((SimpleExpandableListAdapter) null);
-        mDataField.setText(R.string.no_data);
-    }
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.gatt_services_characteristics);
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.gatt_services_characteristics);
+		final Intent intent = getIntent();
+		mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
+		mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
 
-        final Intent intent = getIntent();
-        mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
-        mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
+		// Sets up UI references.
+		((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
+		mConnectionState = (TextView) findViewById(R.id.connection_state);
+		mDataField = (TextView) findViewById(R.id.data_value);
+		mCurrentValue = (TextView) findViewById(R.id.current_value);
+		mChangeAngle = (SeekBar) findViewById(R.id.changeAngle);
+		mInsertCard = (RadioButton) findViewById(R.id.insert_card);
+		mRemoveCard = (RadioButton) findViewById(R.id.remove_card);
+		mMinus = (Button) findViewById(R.id.minus);
+		mPlus = (Button) findViewById(R.id.plus);
 
-        // Sets up UI references.
-        ((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
-        mGattServicesList = (ExpandableListView) findViewById(R.id.gatt_services_list);
-        mGattServicesList.setOnChildClickListener(servicesListClickListner);
-        mConnectionState = (TextView) findViewById(R.id.connection_state);
-        mDataField = (TextView) findViewById(R.id.data_value);
+		// Set seekbar listner
+		mChangeAngle.setMax(180);
+		setSeekBarListner();
 
-        getActionBar().setTitle(mDeviceName);
-        getActionBar().setDisplayHomeAsUpEnabled(true);
-        Intent gattServiceIntent = new Intent(this, RfduinoBleService.class);
-        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-    }
+		// Set servo button listner
+		setInsertCardRadioListner();
+		setRemoveCardRadioListener();
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
-        if (mRfduinoBleService != null) {
-            final boolean result = mRfduinoBleService.connect(mDeviceAddress);
-            Log.d(TAG, "Connect request result=" + result);
-        }
-    }
+		// Set stepper listner
+		setMinusButtonListner();
+		setPlusButtonListner();
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(mGattUpdateReceiver);
-    }
+		getActionBar().setTitle(mDeviceName);
+		getActionBar().setDisplayHomeAsUpEnabled(true);
+		Intent gattServiceIntent = new Intent(this, RfduinoBleService.class);
+		bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+	}
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        unbindService(mServiceConnection);
-        mRfduinoBleService = null;
-    }
+	private void setPlusButtonListner() {
+		mPlus.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				int currentValue = servoData[1]++;
+				mChangeAngle.setProgress(currentValue);
+				mCurrentValue.setText(String.valueOf(currentValue));
+				writeDataToBle(false);
+			}
+		});
+	}
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.gatt_services, menu);
-        if (mConnected) {
-            menu.findItem(R.id.menu_connect).setVisible(false);
-            menu.findItem(R.id.menu_disconnect).setVisible(true);
-        } else {
-            menu.findItem(R.id.menu_connect).setVisible(true);
-            menu.findItem(R.id.menu_disconnect).setVisible(false);
-        }
-        return true;
-    }
+	private void setMinusButtonListner() {
+		mMinus.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				int currentValue = servoData[1]--;
+				mChangeAngle.setProgress(currentValue);
+				mCurrentValue.setText(String.valueOf(currentValue));
+				writeDataToBle(false);
+			}
+		});
+	}
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
-            case R.id.menu_connect:
-                mRfduinoBleService.connect(mDeviceAddress);
-                return true;
-            case R.id.menu_disconnect:
-                mRfduinoBleService.disconnect();
-                return true;
-            case android.R.id.home:
-                onBackPressed();
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
+	private void setRemoveCardRadioListener() {
+		mRemoveCard.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				servoData[0] = 1;
+				servoData[1] = 40;
+				mChangeAngle.setProgress(servoData[1]);
+				mCurrentValue.setText(String.valueOf(servoData[1]));
+				writeDataToBle(true);
+			}
+		});
+	}
 
-    private void updateConnectionState(final int resourceId) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mConnectionState.setText(resourceId);
-            }
-        });
-    }
+	private void setInsertCardRadioListner() {
+		mInsertCard.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				servoData[0] = 1;
+				servoData[1] = 140;
+				mChangeAngle.setProgress(servoData[1]);
+				mCurrentValue.setText(String.valueOf(servoData[1]));
+				writeDataToBle(true);
+			}
+		});
+	}
 
-    private void displayData(String data) {
-        if (data != null) {
-            mDataField.setText(data);
-        }
-    }
+	@Override
+	protected void onResume() {
+		super.onResume();
+		registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+		if (mRfduinoBleService != null) {
+			final boolean result = mRfduinoBleService.connect(mDeviceAddress);
+			Log.d(TAG, "Connect request result=" + result);
+		}
+	}
 
-    // Demonstrates how to iterate through the supported GATT Services/Characteristics.
-    // In this sample, we populate the data structure that is bound to the ExpandableListView
-    // on the UI.
-    private void displayGattServices(List<BluetoothGattService> gattServices) {
-        if (gattServices == null) return;
-        String uuid = null;
-        String unknownServiceString = getResources().getString(R.string.unknown_service);
-        String unknownCharaString = getResources().getString(R.string.unknown_characteristic);
-        ArrayList<HashMap<String, String>> gattServiceData = new ArrayList<HashMap<String, String>>();
-        ArrayList<ArrayList<HashMap<String, String>>> gattCharacteristicData
-                = new ArrayList<ArrayList<HashMap<String, String>>>();
-        mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
+	@Override
+	protected void onPause() {
+		super.onPause();
+		unregisterReceiver(mGattUpdateReceiver);
+	}
 
-        // Loops through available GATT Services.
-        for (BluetoothGattService gattService : gattServices) {
-            HashMap<String, String> currentServiceData = new HashMap<String, String>();
-            uuid = gattService.getUuid().toString();
-            currentServiceData.put(
-                    LIST_NAME, RfduinoGattAttributes.lookup(uuid, unknownServiceString));
-            currentServiceData.put(LIST_UUID, uuid);
-            gattServiceData.add(currentServiceData);
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		unbindService(mServiceConnection);
+		mRfduinoBleService = null;
+	}
 
-            ArrayList<HashMap<String, String>> gattCharacteristicGroupData =
-                    new ArrayList<HashMap<String, String>>();
-            List<BluetoothGattCharacteristic> gattCharacteristics =
-                    gattService.getCharacteristics();
-            ArrayList<BluetoothGattCharacteristic> charas =
-                    new ArrayList<BluetoothGattCharacteristic>();
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.gatt_services, menu);
+		if (mConnected) {
+			menu.findItem(R.id.menu_connect).setVisible(false);
+			menu.findItem(R.id.menu_disconnect).setVisible(true);
+		} else {
+			menu.findItem(R.id.menu_connect).setVisible(true);
+			menu.findItem(R.id.menu_disconnect).setVisible(false);
+		}
+		return true;
+	}
 
-            // Loops through available Characteristics.
-            for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-                charas.add(gattCharacteristic);
-                HashMap<String, String> currentCharaData = new HashMap<String, String>();
-                uuid = gattCharacteristic.getUuid().toString();
-                currentCharaData.put(
-                        LIST_NAME, RfduinoGattAttributes.lookup(uuid, unknownCharaString));
-                currentCharaData.put(LIST_UUID, uuid);
-                gattCharacteristicGroupData.add(currentCharaData);
-            }
-            mGattCharacteristics.add(charas);
-            gattCharacteristicData.add(gattCharacteristicGroupData);
-        }
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+			case R.id.menu_connect:
+				mRfduinoBleService.connect(mDeviceAddress);
+				return true;
+			case R.id.menu_disconnect:
+				mRfduinoBleService.disconnect();
+				return true;
+			case android.R.id.home:
+				onBackPressed();
+				return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
 
-        SimpleExpandableListAdapter gattServiceAdapter = new SimpleExpandableListAdapter(
-                this,
-                gattServiceData,
-                android.R.layout.simple_expandable_list_item_2,
-                new String[] {LIST_NAME, LIST_UUID},
-                new int[] { android.R.id.text1, android.R.id.text2 },
-                gattCharacteristicData,
-                android.R.layout.simple_expandable_list_item_2,
-                new String[] {LIST_NAME, LIST_UUID},
-                new int[] { android.R.id.text1, android.R.id.text2 }
-        );
-        mGattServicesList.setAdapter(gattServiceAdapter);
-    }
+	private void updateConnectionState(final int resourceId) {
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				mConnectionState.setText(resourceId);
+			}
+		});
+	}
 
-    private static IntentFilter makeGattUpdateIntentFilter() {
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(RfduinoBleService.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(RfduinoBleService.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(RfduinoBleService.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(RfduinoBleService.ACTION_DATA_AVAILABLE);
-        return intentFilter;
-    }
+	private void displayData(String data) {
+		if (data != null) {
+			mDataField.setText(data);
+		}
+	}
+
+	// Demonstrates how to iterate through the supported GATT Services/Characteristics.
+	// In this sample, we populate the data structure that is bound to the ExpandableListView
+	// on the UI.
+	private void displayGattServices(List<BluetoothGattService> gattServices) {
+		if (gattServices == null) return;
+		String uuid = null;
+		String unknownServiceString = getResources().getString(R.string.unknown_service);
+		String unknownCharaString = getResources().getString(R.string.unknown_characteristic);
+		ArrayList<HashMap<String, String>> gattServiceData = new ArrayList<HashMap<String, String>>();
+		ArrayList<ArrayList<HashMap<String, String>>> gattCharacteristicData
+				= new ArrayList<ArrayList<HashMap<String, String>>>();
+		mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
+
+		// Loops through available GATT Services.
+		for (BluetoothGattService gattService : gattServices) {
+			HashMap<String, String> currentServiceData = new HashMap<String, String>();
+			uuid = gattService.getUuid().toString();
+			currentServiceData.put(
+					LIST_NAME, RfduinoGattAttributes.lookup(uuid, unknownServiceString));
+			currentServiceData.put(LIST_UUID, uuid);
+			gattServiceData.add(currentServiceData);
+
+			ArrayList<HashMap<String, String>> gattCharacteristicGroupData =
+					new ArrayList<HashMap<String, String>>();
+			List<BluetoothGattCharacteristic> gattCharacteristics =
+					gattService.getCharacteristics();
+			ArrayList<BluetoothGattCharacteristic> charas =
+					new ArrayList<BluetoothGattCharacteristic>();
+
+			// Loops through available Characteristics.
+			for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
+				charas.add(gattCharacteristic);
+				HashMap<String, String> currentCharaData = new HashMap<String, String>();
+				uuid = gattCharacteristic.getUuid().toString();
+				currentCharaData.put(
+						LIST_NAME, RfduinoGattAttributes.lookup(uuid, unknownCharaString));
+				currentCharaData.put(LIST_UUID, uuid);
+				gattCharacteristicGroupData.add(currentCharaData);
+
+				if (gattCharacteristic.getUuid().equals(RfduinoGattAttributes.UUID_SEND)) {
+					characteristicTX = gattService.getCharacteristic(RfduinoGattAttributes.UUID_SEND);
+				} else if (gattCharacteristic.getUuid().equals(RfduinoGattAttributes.UUID_RECEIVE)) {
+					characteristicRX = gattService.getCharacteristic(RfduinoGattAttributes.UUID_RECEIVE);
+				}
+			}
+			mGattCharacteristics.add(charas);
+			gattCharacteristicData.add(gattCharacteristicGroupData);
+		}
+	}
+
+	private static IntentFilter makeGattUpdateIntentFilter() {
+		final IntentFilter intentFilter = new IntentFilter();
+		intentFilter.addAction(RfduinoBleService.ACTION_GATT_CONNECTED);
+		intentFilter.addAction(RfduinoBleService.ACTION_GATT_DISCONNECTED);
+		intentFilter.addAction(RfduinoBleService.ACTION_GATT_SERVICES_DISCOVERED);
+		intentFilter.addAction(RfduinoBleService.ACTION_DATA_AVAILABLE);
+		return intentFilter;
+	}
+
+	private void setSeekBarListner() {
+		mChangeAngle.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress,
+					boolean fromUser) {
+				servoData[1] = progress;
+				mCurrentValue.setText(String.valueOf(progress));
+			}
+
+			@Override
+			public void onStartTrackingTouch(SeekBar seekBar) {
+				// TODO Auto-generated method stub
+			}
+
+			@Override
+			public void onStopTrackingTouch(SeekBar seekBar) {
+				// TODO Auto-generated method stub
+				writeDataToBle(false);
+			}
+		});
+	}
+
+	// on change of bars write char
+	private void writeDataToBle(boolean auto) {
+		if (auto) {
+			servoData[0] = 1;
+		} else {
+			servoData[0] = 2;
+		}
+		String str = servoData[0] + "," + servoData[1];
+		Log.d(TAG, "Sending result=" + str);
+		final byte[] tx = new byte[servoData[0]];
+		if (mConnected && characteristicRX != null && mRfduinoBleService != null) {
+			characteristicTX.setValue(tx);
+			mRfduinoBleService.writeCharacteristic(characteristicTX);
+			mRfduinoBleService.setCharacteristicNotification(characteristicRX, true);
+		}
+	}
 }

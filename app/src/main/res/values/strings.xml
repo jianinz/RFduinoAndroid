@@ -21,6 +21,20 @@
     <string name="no_data">No data</string>
     <string name="connected">Connected</string>
     <string name="disconnected">Disconnected</string>
+	<string name="angle_slider">Change angle value (0° ~ 180°):</string>
+	<string name="current_value">Current value</string>
+	<string name="insert_card">Insert Card</string>
+	<string name="remove_card">Remove Card</string>
+	<string name="device_name">Device Name</string>
+	<string name="device_address">Device Address</string>
+	<string name="device_address_title">Mac: </string>
+	<string name="device_rssi_title">Rssi: </string>
+	<string name="device_rssi">Device Rssi</string>
+	<string name="device_scan_record_title">Scan record: </string>
+	<string name="device_scan_record">Device scan record</string>
+	<string name="minus">-</string>
+	<string name="plus">+</string>
+	<string name="right_slider">180°</string>
     <string name="title_devices">BLE Device Scan</string>
     <string name="error_bluetooth_not_supported">Bluetooth not supported.</string>
 

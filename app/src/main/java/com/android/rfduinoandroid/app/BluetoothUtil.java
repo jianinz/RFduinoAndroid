@@ -14,11 +14,6 @@ public class BluetoothUtil {
 		return UUID.fromString(String.format(shortUuidFormat, shortUuid & 0xFFFF));
 	}
 
-	public static String sixteenBitString(long shortUuid) {
-		assert shortUuid >= 0 && shortUuid <= 0xFFFF;
-		return String.format(shortUuidFormat, shortUuid & 0xFFFF);
-	}
-
 	public static String getDeviceInfoText(BluetoothDevice device, int rssi, byte[] scanRecord) {
 		return new StringBuilder()
 				.append("Name: ").append(device.getName())

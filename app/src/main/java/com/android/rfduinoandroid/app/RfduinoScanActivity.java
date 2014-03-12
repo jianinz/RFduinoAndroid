@@ -23,6 +23,7 @@ import java.util.ArrayList;
 
 /**
  * Activity for scanning and displaying available Bluetooth LE devices.
+ * http://developer.android.com/guide/topics/connectivity/bluetooth-le.html
  */
 public class RfduinoScanActivity extends ListActivity {
 	private LeDeviceListAdapter mLeDeviceListAdapter;
@@ -165,11 +166,15 @@ public class RfduinoScanActivity extends ListActivity {
 	// Adapter for holding devices found through scanning.
 	private class LeDeviceListAdapter extends BaseAdapter {
 		private ArrayList<BluetoothDevice> mLeDevices;
+		private ArrayList<Integer> mLeRssis;
+		private ArrayList<byte[]> mLeScanRecords;
 		private LayoutInflater mInflator;
 
 		public LeDeviceListAdapter() {
 			super();
 			mLeDevices = new ArrayList<BluetoothDevice>();
+			mLeRssis = new ArrayList<Integer>();
+			mLeScanRecords = new ArrayList<byte[]>();
 			mInflator = RfduinoScanActivity.this.getLayoutInflater();
 		}
 
@@ -177,6 +182,14 @@ public class RfduinoScanActivity extends ListActivity {
 			if (!mLeDevices.contains(device)) {
 				mLeDevices.add(device);
 			}
+		}
+
+		public void addRssi(int rssi) {
+			mLeRssis.add(Integer.valueOf(rssi));
+		}
+
+		public void addScanRecord(byte[] scanRecord) {
+			mLeScanRecords.add(scanRecord);
 		}
 
 		public BluetoothDevice getDevice(int position) {
@@ -211,6 +224,8 @@ public class RfduinoScanActivity extends ListActivity {
 				viewHolder = new ViewHolder();
 				viewHolder.deviceAddress = (TextView) view.findViewById(R.id.device_address);
 				viewHolder.deviceName = (TextView) view.findViewById(R.id.device_name);
+				viewHolder.deviceRssi = (TextView) view.findViewById(R.id.device_rssi);
+				viewHolder.deviceScanRecord = (TextView) view.findViewById(R.id.device_scan_record);
 				view.setTag(viewHolder);
 			} else {
 				viewHolder = (ViewHolder) view.getTag();
@@ -218,11 +233,14 @@ public class RfduinoScanActivity extends ListActivity {
 
 			BluetoothDevice device = mLeDevices.get(i);
 			final String deviceName = device.getName();
-			if (deviceName != null && deviceName.length() > 0)
+			if (deviceName != null && deviceName.length() > 0) {
 				viewHolder.deviceName.setText(deviceName);
-			else
+			} else {
 				viewHolder.deviceName.setText(R.string.unknown_device);
+			}
 			viewHolder.deviceAddress.setText(device.getAddress());
+			viewHolder.deviceRssi.setText(String.valueOf(mLeRssis.get(i)));
+			viewHolder.deviceScanRecord.setText(HexAsciiUtil.bytesToHex(mLeScanRecords.get(i)));
 
 			return view;
 		}
@@ -233,11 +251,13 @@ public class RfduinoScanActivity extends ListActivity {
 			new BluetoothAdapter.LeScanCallback() {
 
 				@Override
-				public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
+				public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] scanRecord) {
 					runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
 							mLeDeviceListAdapter.addDevice(device);
+							mLeDeviceListAdapter.addRssi(rssi);
+							mLeDeviceListAdapter.addScanRecord(scanRecord);
 							mLeDeviceListAdapter.notifyDataSetChanged();
 						}
 					});
@@ -247,5 +267,7 @@ public class RfduinoScanActivity extends ListActivity {
 	static class ViewHolder {
 		TextView deviceName;
 		TextView deviceAddress;
+		TextView deviceRssi;
+		TextView deviceScanRecord;
 	}
 }
