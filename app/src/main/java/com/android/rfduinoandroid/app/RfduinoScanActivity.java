@@ -240,7 +240,7 @@ public class RfduinoScanActivity extends ListActivity {
 			}
 			viewHolder.deviceAddress.setText(device.getAddress());
 			viewHolder.deviceRssi.setText(String.valueOf(mLeRssis.get(i)));
-			viewHolder.deviceScanRecord.setText(HexAsciiUtil.bytesToHex(mLeScanRecords.get(i)));
+			viewHolder.deviceScanRecord.setText(BluetoothUtil.parseScanRecord(mLeScanRecords.get(i)));
 
 			return view;
 		}

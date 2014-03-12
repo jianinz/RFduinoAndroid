@@ -1,6 +1,5 @@
 package com.android.rfduinoandroid.app;
 
-import android.bluetooth.BluetoothDevice;
 import java.util.UUID;
 
 /**
@@ -14,17 +13,8 @@ public class BluetoothUtil {
 		return UUID.fromString(String.format(shortUuidFormat, shortUuid & 0xFFFF));
 	}
 
-	public static String getDeviceInfoText(BluetoothDevice device, int rssi, byte[] scanRecord) {
-		return new StringBuilder()
-				.append("Name: ").append(device.getName())
-				.append("\nMAC: ").append(device.getAddress())
-				.append("\nRSSI: ").append(rssi)
-				.append("\nScan Record:").append(parseScanRecord(scanRecord))
-				.toString();
-	}
-
 	// Bluetooth Spec V4.0 - Vol 3, Part C, section 8
-	private static String parseScanRecord(byte[] scanRecord) {
+	public static String parseScanRecord(byte[] scanRecord) {
 		StringBuilder output = new StringBuilder();
 		int i = 0;
 		while (i < scanRecord.length) {
