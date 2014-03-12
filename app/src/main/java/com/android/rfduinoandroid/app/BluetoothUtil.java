@@ -23,10 +23,10 @@ public class BluetoothUtil {
 			switch (scanRecord[i] & 0xFF) {
 				// https://www.bluetooth.org/en-us/specification/assigned-numbers/generic-access-profile
 				case 0x0A: // Tx Power
-					output.append("\n  Tx Power: ").append(scanRecord[i + 1]);
+					output.append("Tx Power: ").append(scanRecord[i + 1]);
 					break;
 				case 0xFF: // Manufacturer Specific data (RFduinoBLE.advertisementData)
-					output.append("\n  Advertisement Data: ")
+					output.append("\nAdvertisement Data: ")
 							.append(HexAsciiUtil.bytesToHex(scanRecord, i + 3, len));
 
 					String ascii = HexAsciiUtil.bytesToAsciiMaybe(scanRecord, i + 3, len);
