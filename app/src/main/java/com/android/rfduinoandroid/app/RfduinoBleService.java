@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Service for managing connection and data communication with a GATT server hosted on a
  * given Bluetooth LE device.
- *
+ * <p/>
  * http://developer.android.com/guide/topics/connectivity/bluetooth-le.html
  */
 public class RfduinoBleService extends Service {
@@ -246,6 +246,7 @@ public class RfduinoBleService extends Service {
 
 	/**
 	 * Write to a given char
+	 *
 	 * @param characteristic The characteristic to write to
 	 */
 	public void writeCharacteristic(BluetoothGattCharacteristic characteristic) {
@@ -254,7 +255,8 @@ public class RfduinoBleService extends Service {
 			return;
 		}
 
-		mBluetoothGatt.writeCharacteristic(characteristic);
+		boolean charaValue = mBluetoothGatt.writeCharacteristic(characteristic);
+		Log.d(TAG, "writing character is:  " + charaValue);
 	}
 
 	/**

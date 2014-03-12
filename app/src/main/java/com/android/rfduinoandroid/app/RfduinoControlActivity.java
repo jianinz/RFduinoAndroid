@@ -350,7 +350,6 @@ public class RfduinoControlActivity extends Activity {
 		});
 	}
 
-	// on change of bars write char
 	private void writeDataToBle(boolean auto) {
 		if (auto) {
 			servoData[0] = 1;
@@ -361,7 +360,8 @@ public class RfduinoControlActivity extends Activity {
 		Log.d(TAG, "Sending result=" + str);
 		final byte[] tx = str.getBytes();
 		if (mConnected && characteristicRX != null && mRfduinoBleService != null) {
-			characteristicTX.setValue(tx);
+			boolean valueSet = characteristicTX.setValue(tx);
+			Log.d(TAG, "value set is :" + valueSet);
 			mRfduinoBleService.writeCharacteristic(characteristicTX);
 			mRfduinoBleService.setCharacteristicNotification(characteristicRX, true);
 		}
