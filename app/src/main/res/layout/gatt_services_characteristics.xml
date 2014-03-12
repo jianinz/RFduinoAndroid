@@ -81,14 +81,16 @@
 					android:layout_height="wrap_content"
 					android:layout_weight="50"
 					android:text="@string/insert_card"
-					android:textSize="18sp"/>
+					android:textSize="18sp"
+					android:onClick="onRadioButtonClicked"/>
 			<RadioButton
 					android:id="@+id/remove_card"
 					android:layout_width="match_parent"
 					android:layout_height="wrap_content"
 					android:layout_weight="50"
 					android:text="@string/remove_card"
-					android:textSize="18sp"/>
+					android:textSize="18sp"
+					android:onClick="onRadioButtonClicked"/>
 		</RadioGroup>
 	</LinearLayout>
 

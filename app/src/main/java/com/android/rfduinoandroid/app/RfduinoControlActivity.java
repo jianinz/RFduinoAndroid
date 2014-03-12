@@ -138,10 +138,6 @@ public class RfduinoControlActivity extends Activity {
 		mChangeAngle.setMax(180);
 		setSeekBarListner();
 
-		// Set servo button listner
-		setInsertCardRadioListner();
-		setRemoveCardRadioListener();
-
 		// Set stepper listner
 		setMinusButtonListner();
 		setPlusButtonListner();
@@ -176,30 +172,32 @@ public class RfduinoControlActivity extends Activity {
 		});
 	}
 
-	private void setRemoveCardRadioListener() {
-		mRemoveCard.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				servoData[0] = 1;
-				servoData[1] = 40;
-				mChangeAngle.setProgress(servoData[1]);
-				mCurrentValue.setText(String.valueOf(servoData[1]));
-				writeDataToBle(true);
-			}
-		});
+	public void onRadioButtonClicked(View view) {
+		boolean checked = ((RadioButton) view).isChecked();
+
+		// Check which radio button was clicked
+		switch (view.getId()) {
+			case R.id.insert_card:
+				if (checked) {
+					servoData[1] = 1;
+					respondToRadioButtonClickEvent();
+				}
+				break;
+			case R.id.remove_card:
+				if (checked) {
+					servoData[1] = 0;
+					respondToRadioButtonClickEvent();
+				}
+				break;
+			default:
+				break;
+		}
 	}
 
-	private void setInsertCardRadioListner() {
-		mInsertCard.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				servoData[0] = 1;
-				servoData[1] = 140;
-				mChangeAngle.setProgress(servoData[1]);
-				mCurrentValue.setText(String.valueOf(servoData[1]));
-				writeDataToBle(true);
-			}
-		});
+	private void respondToRadioButtonClickEvent() {
+		mChangeAngle.setProgress(servoData[1]);
+		mCurrentValue.setText(String.valueOf(servoData[1]));
+		writeDataToBle(true);
 	}
 
 	@Override
@@ -356,9 +354,8 @@ public class RfduinoControlActivity extends Activity {
 		} else {
 			servoData[0] = 2;
 		}
-		String str = servoData[0] + "," + servoData[1];
-		Log.d(TAG, "Sending result=" + str);
-		final byte[] tx = str.getBytes();
+		final byte[] tx = new byte[]{(byte) servoData[0], (byte) servoData[1]};
+		Log.d(TAG, "Sending result=" + servoData[0] + "," + servoData[1]);
 		if (mConnected && characteristicRX != null && mRfduinoBleService != null) {
 			boolean valueSet = characteristicTX.setValue(tx);
 			Log.d(TAG, "value set is :" + valueSet);
