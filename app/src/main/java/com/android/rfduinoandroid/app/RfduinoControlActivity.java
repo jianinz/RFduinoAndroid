@@ -359,7 +359,7 @@ public class RfduinoControlActivity extends Activity {
 		}
 		String str = servoData[0] + "," + servoData[1];
 		Log.d(TAG, "Sending result=" + str);
-		final byte[] tx = new byte[servoData[0]];
+		final byte[] tx = str.getBytes();
 		if (mConnected && characteristicRX != null && mRfduinoBleService != null) {
 			characteristicTX.setValue(tx);
 			mRfduinoBleService.writeCharacteristic(characteristicTX);
